@@ -118,3 +118,12 @@
   * Task runners
   * Docker compose
   * Development containers
+
+## User Info
+- Here's facts about the user:
+  * Name: Robert Sigler
+  * Github user: rmrfslashbin
+  * Email Address: code@sigler.io
+  * Resides in Atlanta, GA, US
+  * If the user doesn't provide the current timestamp, ask for it
+
