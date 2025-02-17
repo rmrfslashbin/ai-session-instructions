@@ -1,138 +1,206 @@
-# Workout Log Parsing and Structuring Prompt
+# Comprehensive Workout Log Parsing Instructions
 
 ## Objective
-Parse workout logs into a structured, consistent, and machine-readable format that captures all nuanced workout details with maximum flexibility and precision.
+Transform raw workout logs into a standardized, machine-readable JSON format that captures maximum detail while maintaining clarity and consistency.
 
-## Advanced Notation Parsing Guidelines
+## Parsing Workflow
 
-### Symmetric Exercise Notations
-1. Bracket Notation `[reps,reps]`
-   - Represents reps per side
-   - Examples:
-     * `[25,25]@0`: 25 reps per side, bodyweight
-     * `[10,10]@25`: 10 reps per side, 25 lbs total
+### 1. Input Preparation
+- Remove any extraneous whitespace
+- Normalize line breaks
+- Ensure consistent date formatting (YYYY-MM-DD)
 
-2. Handling Asymmetric Symmetric Sets
-   - Preserve exact rep differences
-   - Example: `[25,24]@35` 
-     * Capture precise per-side rep count
-     * Note variation in reps
+### 2. Parsing Rules
 
-### Weight and Rep Representation
-- Support multiple weight representation formats:
-  * Standard: `10@60`
-  * Symmetric: `[10,10]@25`
-  * Bodyweight: `@0`
-  * No explicit weight: `40, 40, 30`
-
-### Metadata Enrichment
+#### 2.1 Top-Level Structure
 ```json
 {
-  "reps": 25,
-  "weight": 35,
-  "weightType": "total",
+  "workouts": [
+    {
+      "date": "YYYY-MM-DD",
+      "exercises": [ ... ]
+    }
+  ]
+}
+```
+
+#### 2.2 Exercise Parsing Guidelines
+
+##### Naming Normalization
+1. Standardize Exercise Names
+   - Remove extra whitespaces
+   - Correct capitalization
+   - Use consistent anatomical terminology
+   - Standardize abbreviations
+
+Conversion Examples:
+- "scull crushers" → "Skull Crushers"
+- "step up" → "Step Ups"
+- "Shoulders Lateral" → "Lateral Shoulder Raises"
+- "Shoulders Anterior" → "Anterior Shoulder Raises"
+
+##### Weight and Rep Notation Handling
+
+###### 1. Standard Notation: `reps@weight`
+- Example: `10@60`
+- Parsing: Straightforward representation
+```json
+{
+  "reps": 10,
+  "weight": 60
+}
+```
+
+###### 2. Symmetric Exercise Notation: `[reps,reps]@weight`
+- Represents reps per side
+- Example: `[25,25]@0`
+```json
+{
+  "reps": 50,
+  "weight": 0,
+  "weightType": "bodyweight",
   "metadata": {
-    "perSideReps": [25, 25],
-    "perSideWeight": 35,
-    "asymmetryNoted": false
+    "perSideReps": [25, 25]
   }
 }
 ```
 
-## Comprehensive Parsing Rules
-
-### Exercise Naming Normalization
-- Standardization Process:
-  1. Remove extra whitespaces
-  2. Correct capitalization
-  3. Standardize anatomical terms
-  4. Handle variations consistently
-
-Naming Conversion Examples:
-- "scull crushers" → "Skull Crushers"
-- "Shoulders Lateral" → "Lateral Shoulder Raises"
-- "step up" → "Step Ups"
-
-### Incomplete Entry Handling
-- Preserve partial workouts
-- Flag incomplete sets
-- Maintain chronological integrity
-- Allow optional metadata for context
-
-### Numerical Value Processing
-- Handle various rep counting methods
-  * Explicit reps with weight
-  * Bodyweight exercises
-  * Sets without explicit weight
-- Validate numerical sanity
-- Provide clear error/uncertainty markers
-
-## Advanced Parsing Scenarios
-
-### Bodyweight and No-Weight Exercises
+###### 3. Asymmetric Symmetric Notation
+- Example: `[25,24]@35`
 ```json
 {
-  "name": "Step Ups",
-  "sets": [
-    {
-      "reps": 25,
-      "weight": 0,
-      "weightType": "bodyweight",
-      "metadata": {
-        "perSideReps": [25, 25]
-      }
-    }
-  ]
+  "reps": 49,
+  "weight": 35,
+  "weightType": "total",
+  "metadata": {
+    "perSideReps": [25, 24],
+    "asymmetryNoted": true
+  }
 }
 ```
 
-### Asymmetric Symmetric Exercise
+###### 4. Bodyweight/No Weight Exercises
+- Reps without weight
+- Example: `40, 40, 30`
 ```json
 {
-  "name": "Obliques",
-  "sets": [
-    {
-      "reps": 50,
-      "weight": 35,
-      "weightType": "total",
-      "metadata": {
-        "perSideReps": [25, 25],
-        "asymmetryNoted": true,
-        "actualPerSideReps": [25, 24]
-      }
-    }
-  ]
+  "reps": 40,
+  "weight": 0,
+  "weightType": "bodyweight"
 }
 ```
 
-## Error Detection and Uncertainty Handling
+### 3. Detailed Parsing Steps
 
-### Validation Strategies
-- Detect and flag:
-  * Extreme or unrealistic values
-  * Incomplete exercise records
-  * Naming inconsistencies
-  * Potential data entry errors
+#### 3.1 Date Processing
+- Validate date format
+- Ensure chronological order
+- Handle potential date inconsistencies
 
-### Confidence Levels
+#### 3.2 Exercise Processing
+1. Normalize exercise name
+2. Parse each set
+3. Capture all available information
+4. Add metadata for complex exercises
+
+#### 3.3 Special Handling
+- Preserve incomplete workouts
+- Flag partial sets
+- Maintain original rep and weight information
+
+### 4. Error Detection and Handling
+
+#### Validation Checks
+- Verify non-negative numerical values
+- Detect unrealistic weights/reps
+- Identify potential data entry errors
+
+#### Confidence Levels
 - Level 0: Parsing Failure
 - Level 1: Major Uncertainties
-- Level 2: Moderate Parsing Challenges
-- Level 3: Minor Clarifications Needed
-- Level 4: High-Confidence Parsing
+- Level 2: Moderate Challenges
+- Level 3: Minor Clarifications
+- Level 4: High Confidence Parsing
 
-## User Logging Recommendations
-- Use consistent exercise naming
-- Explicitly note symmetric exercise details
-- Provide context for partial or unusual workouts
-- Prefer clear, unambiguous notations
+### 5. Metadata Enrichment
+
+#### Optional Metadata Fields
+```json
+{
+  "metadata": {
+    "perSideReps": [25, 25],
+    "perSideWeight": 35,
+    "asymmetryNoted": false,
+    "incomplete": false,
+    "notes": "Additional context if needed"
+  }
+}
+```
 
 ## Parsing Philosophy
-Transform raw workout data into a precise, flexible, and informative representation that captures the nuanced details of physical training while maintaining the integrity of the original recording.
+- Preserve original intent
+- Maximize information capture
+- Provide clear, consistent representation
+- Allow for future analytical capabilities
 
-### Future Evolution
-- Continuous improvement of parsing rules
-- Adaptive learning from user input
-- Enhanced exercise and movement recognition
-- Predictive workout analysis capabilities
+## Recommended AI Workflow
+1. Validate input format
+2. Normalize data
+3. Parse date and exercises
+4. Apply naming standardization
+5. Handle complex notations
+6. Generate JSON output
+7. Perform validation checks
+8. Report any uncertainties
 
+## Example Transformation
+
+### Input
+```
+2025-01-05
+* Bench press - 8@125, 7@125, 5@125, 5@125
+* Incline Chest Barbells - 15@[25,25], 15@[25,25], 15@[25,25], 15@[25,25]
+```
+
+### Output
+```json
+{
+  "workouts": [
+    {
+      "date": "2025-01-05",
+      "exercises": [
+        {
+          "name": "Bench Press",
+          "sets": [
+            {"reps": 8, "weight": 125},
+            {"reps": 7, "weight": 125},
+            {"reps": 5, "weight": 125},
+            {"reps": 5, "weight": 125}
+          ]
+        },
+        {
+          "name": "Incline Chest Barbells",
+          "sets": [
+            {
+              "reps": 15,
+              "weight": 50,
+              "weightType": "total",
+              "metadata": {
+                "perSideReps": [15, 15],
+                "perSideWeight": 25
+              }
+            }
+            // ... additional sets ...
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+## Future Improvements
+- Machine learning-based name normalization
+- Enhanced error detection
+- Predictive workout analysis
+- Adaptive parsing capabilities
