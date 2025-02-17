@@ -1,197 +1,35 @@
-# Comprehensive Workout Log Parsing Instructions
+# Workout Log Parser
 
-## Objective
-Transform raw workout logs into a standardized, machine-readable JSON format that captures maximum detail while maintaining clarity and consistency.
+## Purpose
+Convert raw workout log text into a standardized JSON format.
 
-## Parsing Workflow
+## Input Format
+Raw text with workouts in the following format:
+```
+YYYY-MM-DD
+* Exercise Name - set1@weight, set2@weight, ...
+* Another Exercise - set1@weight, set2@weight, ...
+```
 
-### 1. Input Preparation
-- Remove any extraneous whitespace
-- Normalize line breaks
-- Ensure consistent date formatting (YYYY-MM-DD)
-
-### 2. Parsing Rules
-
-#### 2.1 Top-Level Structure
+## Output Format
+JSON object with the following structure:
 ```json
 {
   "workouts": [
     {
       "date": "YYYY-MM-DD",
-      "exercises": [ ... ]
-    }
-  ]
-}
-```
-
-#### 2.2 Exercise Parsing Guidelines
-
-##### Naming Normalization
-1. Standardize Exercise Names
-   - Remove extra whitespaces
-   - Correct capitalization
-   - Use consistent anatomical terminology
-   - Standardize abbreviations
-
-Conversion Examples:
-- "scull crushers" → "Skull Crushers"
-- "step up" → "Step Ups"
-- "Shoulders Lateral" → "Lateral Shoulder Raises"
-- "Shoulders Anterior" → "Anterior Shoulder Raises"
-
-##### Weight and Rep Notation Handling
-
-###### 1. Standard Notation: `reps@weight`
-- Example: `10@60`
-- Parsing: Straightforward representation
-```json
-{
-  "reps": 10,
-  "weight": 60
-}
-```
-
-###### 2. Symmetric Exercise Notation: `[reps,reps]@weight`
-- Represents reps per side
-- Example: `[25,25]@0`
-```json
-{
-  "reps": 50,
-  "weight": 0,
-  "weightType": "bodyweight",
-  "metadata": {
-    "perSideReps": [25, 25]
-  }
-}
-```
-
-###### 3. Asymmetric Symmetric Notation
-- Example: `[25,24]@35`
-```json
-{
-  "reps": 49,
-  "weight": 35,
-  "weightType": "total",
-  "metadata": {
-    "perSideReps": [25, 24],
-    "asymmetryNoted": true
-  }
-}
-```
-
-###### 4. Bodyweight/No Weight Exercises
-- Reps without weight
-- Example: `40, 40, 30`
-```json
-{
-  "reps": 40,
-  "weight": 0,
-  "weightType": "bodyweight"
-}
-```
-
-### 3. Detailed Parsing Steps
-
-#### 3.1 Date Processing
-- Validate date format
-- Ensure chronological order
-- Handle potential date inconsistencies
-
-#### 3.2 Exercise Processing
-1. Normalize exercise name
-2. Parse each set
-3. Capture all available information
-4. Add metadata for complex exercises
-
-#### 3.3 Special Handling
-- Preserve incomplete workouts
-- Flag partial sets
-- Maintain original rep and weight information
-
-### 4. Error Detection and Handling
-
-#### Validation Checks
-- Verify non-negative numerical values
-- Detect unrealistic weights/reps
-- Identify potential data entry errors
-
-#### Confidence Levels
-- Level 0: Parsing Failure
-- Level 1: Major Uncertainties
-- Level 2: Moderate Challenges
-- Level 3: Minor Clarifications
-- Level 4: High Confidence Parsing
-
-### 5. Metadata Enrichment
-
-#### Optional Metadata Fields
-```json
-{
-  "metadata": {
-    "perSideReps": [25, 25],
-    "perSideWeight": 35,
-    "asymmetryNoted": false,
-    "incomplete": false,
-    "notes": "Additional context if needed"
-  }
-}
-```
-
-## Parsing Philosophy
-- Preserve original intent
-- Maximize information capture
-- Provide clear, consistent representation
-- Allow for future analytical capabilities
-
-## Recommended AI Workflow
-1. Validate input format
-2. Normalize data
-3. Parse date and exercises
-4. Apply naming standardization
-5. Handle complex notations
-6. Generate JSON output
-7. Perform validation checks
-8. Report any uncertainties
-
-## Example Transformation
-
-### Input
-```
-2025-01-05
-* Bench press - 8@125, 7@125, 5@125, 5@125
-* Incline Chest Barbells - 15@[25,25], 15@[25,25], 15@[25,25], 15@[25,25]
-```
-
-### Output
-```json
-{
-  "workouts": [
-    {
-      "date": "2025-01-05",
       "exercises": [
         {
-          "name": "Bench Press",
-          "sets": [
-            {"reps": 8, "weight": 125},
-            {"reps": 7, "weight": 125},
-            {"reps": 5, "weight": 125},
-            {"reps": 5, "weight": 125}
-          ]
-        },
-        {
-          "name": "Incline Chest Barbells",
+          "name": "Exercise Name",
           "sets": [
             {
-              "reps": 15,
-              "weight": 50,
-              "weightType": "total",
-              "metadata": {
-                "perSideReps": [15, 15],
-                "perSideWeight": 25
-              }
+              "reps": number,
+              "weight": number,
+              "weightType": string (optional),
+              "metadata": object (optional)
             }
-            // ... additional sets ...
-          ]
+          ],
+          "metadata": object (optional)
         }
       ]
     }
@@ -199,8 +37,94 @@ Conversion Examples:
 }
 ```
 
-## Future Improvements
-- Machine learning-based name normalization
-- Enhanced error detection
-- Predictive workout analysis
-- Adaptive parsing capabilities
+## Parsing Rules
+
+### Exercise Names
+- Normalize capitalization
+- Standardize terminology
+- Examples:
+  - "scull crushers" → "Skull Crushers"
+  - "Shoulders Lateral" → "Lateral Shoulder Raises"
+
+### Set Notation Types
+
+1. Standard: `reps@weight`
+   ```
+   10@60 → {"reps": 10, "weight": 60}
+   ```
+
+2. Per-Side Weights: `reps@weight+weight`
+   ```
+   10@35+35 → {
+     "reps": 10,
+     "weight": 70,
+     "metadata": {"perSideWeight": 35}
+   }
+   ```
+
+3. Per-Side Reps: `leftReps+rightReps@weight`
+   ```
+   5+5@0 → {
+     "reps": 10,
+     "weight": 0,
+     "weightType": "bodyweight",
+     "metadata": {"perSideReps": [5, 5]}
+   }
+   ```
+
+4. Bodyweight/No Weight: `reps@0`
+   ```
+   15@0 → {
+     "reps": 15,
+     "weight": 0,
+     "weightType": "bodyweight"
+   }
+   ```
+
+### Special Cases
+
+1. Incomplete Sets
+   - When entry ends with comma
+   - Add `"metadata": {"incomplete": true}`
+
+2. Missing Data
+   - Skip invalid entries
+   - Document in parsing report
+
+## Example
+
+Input:
+```
+2024-07-15
+* Bench Press - 8@115, 8@115, 6@115
+* Shoulder Raises Side - 10@10+10, 10@10+10,
+```
+
+Output:
+```json
+{
+  "workouts": [
+    {
+      "date": "2024-07-15",
+      "exercises": [
+        {
+          "name": "Bench Press",
+          "sets": [
+            {"reps": 8, "weight": 115},
+            {"reps": 8, "weight": 115},
+            {"reps": 6, "weight": 115}
+          ]
+        },
+        {
+          "name": "Lateral Shoulder Raises",
+          "sets": [
+            {"reps": 10, "weight": 20, "metadata": {"perSideWeight": 10}},
+            {"reps": 10, "weight": 20, "metadata": {"perSideWeight": 10}}
+          ],
+          "metadata": {"incomplete": true}
+        }
+      ]
+    }
+  ]
+}
+```
