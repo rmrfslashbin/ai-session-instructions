@@ -85,7 +85,7 @@ JSON object with the following structure:
 
 1. Incomplete Sets
    - When entry ends with comma
-   - Add `"metadata": {"incomplete": true}`
+   - Assume the workout is complete
 
 2. Missing Data
    - Skip invalid entries
